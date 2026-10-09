@@ -371,9 +371,9 @@
 
         if (!isLive) {
             funcValue.textContent =
-                `y(t) = ${amplitude.toFixed(3)} · sen(2π · ${freqFromZC.toFixed(1)} · t)`;
+                `f(x) = ${amplitude.toFixed(3)} · sen(2π · ${freqFromZC.toFixed(1)} · x)`;
             funcValue.title =
-                'A é a amplitude de pico normalizada (0..1), f é a frequência em Hz e t é o tempo em segundos.';
+                'A é a amplitude de pico normalizada (0..1), a frequência está em Hz e x representa o tempo em segundos.';
             funcValue.hidden = true;
             functionOverlay.hidden = true;
             showFunctionBtn.hidden = false;
