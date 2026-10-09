@@ -309,8 +309,11 @@
 
         // [4.9] detecção de clipping
         let clipped = false;
+        let amplitude = 0;
         for (let i = 0; i < N; i++) {
-            if (Math.abs(samples[i]) >= 0.985) { clipped = true; break; }
+            const sampleMagnitude = Math.abs(samples[i]);
+            amplitude = Math.max(amplitude, sampleMagnitude);
+            if (sampleMagnitude >= 0.985) clipped = true;
         }
         if (clipped) {
             statusMsg.textContent = '⚠ Sinal saturado — reduza o volume de entrada';
@@ -359,44 +362,18 @@
             return;
         }
 
-        // ---------- 4) Regressão por mínimos quadrados ----------
-        // Modelo: y(t) = a·sen(ω·t) + b·cos(ω·t)
-        const omega = 2 * Math.PI * freqFromZC / sampleRate;
-
-        let Sss = 0, Scc = 0, Ssc = 0, Ssy = 0, Scy = 0;
-        for (let i = 0; i < N; i++) {
-            const s = Math.sin(omega * i);
-            const c = Math.cos(omega * i);
-            const y = samples[i];
-            Sss += s * s;
-            Scc += c * c;
-            Ssc += s * c;
-            Ssy += s * y;
-            Scy += c * y;
-        }
-
-        const det = Sss * Scc - Ssc * Ssc;
-        let a = 0, b = 0;
-        if (Math.abs(det) > 1e-10) {
-            a = (Ssy * Scc - Scy * Ssc) / det;
-            b = (Scy * Sss - Ssy * Ssc) / det;
-        }
-        const A_fit = Math.sqrt(a * a + b * b);
-        const phase = Math.atan2(b, a);
-        const levelDbfs = A_fit > 0 ? 20 * Math.log10(A_fit) : -Infinity;
+        const levelDbfs = amplitude > 0 ? 20 * Math.log10(amplitude) : -Infinity;
 
         freqValue.textContent = `${freqFromZC.toFixed(1)} Hz`;
-        amplitudeValue.textContent = `${A_fit.toFixed(3)} (0–1)`;
+        amplitudeValue.textContent = `${amplitude.toFixed(3)} (0–1)`;
         levelValue.textContent = `${levelDbfs.toFixed(1)} dBFS`;
         periodValue.textContent = `${(1000 / freqFromZC).toFixed(2)} ms`;
 
         if (!isLive) {
-            const phaseSign = phase < 0 ? '−' : '+';
             funcValue.textContent =
-                `y(t) = ${A_fit.toFixed(3)} · sen(2π · ${freqFromZC.toFixed(1)} · t ${phaseSign} ${Math.abs(phase).toFixed(3)} rad)`;
+                `y(t) = ${amplitude.toFixed(3)} · sen(2π · ${freqFromZC.toFixed(1)} · t)`;
             funcValue.title =
-                'A é a amplitude de pico normalizada (0..1); a fase é estimada pelos mínimos quadrados; ' +
-                't é o tempo em segundos.';
+                'A é a amplitude de pico normalizada (0..1), f é a frequência em Hz e t é o tempo em segundos.';
             funcValue.hidden = true;
             functionOverlay.hidden = true;
             showFunctionBtn.hidden = false;
@@ -408,7 +385,7 @@
         }
 
         // [7.4] log de diagnóstico
-        logDiag('analyze', { rms, freqFromZC, A_fit, clipped });
+        logDiag('analyze', { rms, freqFromZC, amplitude, clipped });
     }
 
     function clearAnalysisResults() {
